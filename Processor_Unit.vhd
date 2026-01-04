@@ -25,7 +25,7 @@ end entity Processor_Unit;
 
 architecture Behavioral of Processor_Unit is
   
-  component Memory_Store is
+  component Memory_Store_RAM is
     port(
       clk      : in  std_logic;
       we       : in  std_logic;
@@ -110,6 +110,12 @@ architecture Behavioral of Processor_Unit is
   signal io_data_in       : std_logic_vector(23 downto 0);
   signal data_bus_mux_out : std_logic_vector(23 downto 0);
   constant IO_ADDR_SWITCHES : std_logic_vector(7 downto 0) := x"F0";
+
+  --LFSR Singals
+  signal lfsr_enable : std_logic;
+  signal lfsr_value  : std_logic_vector(7 downto 0);
+
+  constant IO_ADDR_RANDOM : std_logic_vector(7 downto 0) := x"E1";
   
   -- Dirección y Registro para LEDs
   constant IO_ADDR_LEDS     : std_logic_vector(7 downto 0) := x"E0";
@@ -117,7 +123,7 @@ architecture Behavioral of Processor_Unit is
 
 begin
 
-  U_Mem : Memory_Store
+  U_Mem : Memory_Store_RAM
     port map ( clk => master_clk, we => mem_we, Addr_in => mem_addr_reg,
                Data_in => mem_data_to_ram, Data_out => mem_data_from_ram );
                
@@ -135,10 +141,20 @@ begin
     port map ( clk_in => master_clk, rst_in => master_reset,
                pulse_1khz_out => pulse_1khz, pulse_1hz_out => pulse_1hz );
 
+	U_LFSR : entity work.LFSR_8bit
+  port map(
+    clk    => master_clk,
+    reset  => not master_reset, -- Lo invertimos aquí
+    enable => '1',
+    q      => lfsr_value
+  );
+
   -- MUX de Lectura MMIO
   io_data_in <= x"00" & "00000000000000" & eq_select_in;
-  data_bus_mux_out <= io_data_in when mem_addr_reg = IO_ADDR_SWITCHES else
-                      mem_data_from_ram;
+  data_bus_mux_out <=
+  x"0000" & lfsr_value when mem_addr_reg = IO_ADDR_RANDOM else
+  io_data_in       when mem_addr_reg = IO_ADDR_SWITCHES else
+  mem_data_from_ram;
 
   -- Conectar salidas
   leds_out <= leds_reg;

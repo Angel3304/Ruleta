@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity Memory_Store is
+entity Memory_Store_RAM is
   port(
     clk      : in  std_logic;
     we       : in  std_logic;
@@ -12,7 +12,7 @@ entity Memory_Store is
   );
 end entity;
 
-architecture Behavioral of Memory_Store is
+architecture Behavioral of Memory_Store_RAM is
 
   -- Opcodes
   constant OP_LDX   : std_logic_vector(7 downto 0) := x"01";

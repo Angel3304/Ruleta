@@ -2,54 +2,43 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity Memory_Store is
+entity Memory_Store_ROM is
   port(
     Addr_in  : in  std_logic_vector(7 downto 0);
     Data_bus : out std_logic_vector(23 downto 0)
   );
 end entity;
 
-architecture Behavioral of Memory_Store is
-  -- Opcodes (incluyendo el nuevo OP_MUL)
+architecture Behavioral of Memory_Store_ROM is -- Nombre corregido
+  -- Opcodes
   constant OP_LDX   : std_logic_vector(7 downto 0) := x"01";
   constant OP_LDY   : std_logic_vector(7 downto 0) := x"02";
-  constant OP_ADD   : std_logic_vector(7 downto 0) := x"03";
-  constant OP_ADDI  : std_logic_vector(7 downto 0) := x"04";
-  constant OP_CMP   : std_logic_vector(7 downto 0) := x"05";
   constant OP_DISP  : std_logic_vector(7 downto 0) := x"06";
-  constant OP_JUMP  : std_logic_vector(7 downto 0) := x"07";
-  constant OP_BR_NZ : std_logic_vector(7 downto 0) := x"08";
-  constant OP_SUB   : std_logic_vector(7 downto 0) := x"09";
   constant OP_WAIT  : std_logic_vector(7 downto 0) := x"0A";
-  constant OP_BS    : std_logic_vector(7 downto 0) := x"0B";
-  constant OP_BNC   : std_logic_vector(7 downto 0) := x"0C";
-  constant OP_BNV   : std_logic_vector(7 downto 0) := x"0D";
-  constant OP_MUL   : std_logic_vector(7 downto 0) := x"0E"; -- NUEVO
-  constant OP_STOP  : std_logic_vector(7 downto 0) := x"0F";
+  constant OP_DIV   : std_logic_vector(7 downto 0) := x"10"; -- Opcode para tu divisor
+  constant OP_STORE : std_logic_vector(7 downto 0) := x"11"; -- Opcode para guardar
+  constant OP_JUMP  : std_logic_vector(7 downto 0) := x"07";
+  constant OP_ADDI  : std_logic_vector(7 downto 0) := x"04";
+
+  -- Direcciones MMIO
+  constant ADDR_LFSR : std_logic_vector(7 downto 0) := x"E1";
+  constant ADDR_LEDS : std_logic_vector(7 downto 0) := x"E0";
 
   type t_mem_array is array (0 to 255) of std_logic_vector(23 downto 0);
   
-  -- MODIFICADO: Nuevo programa para probar MUL
   constant Program_Data : t_mem_array := (
     ------------------------------------------------------------------
-    -- Programa de Prueba (Multiplicación 8x8)
+    -- Programa: Ruleta Aleatoria
     ------------------------------------------------------------------
-    -- Propósito: Probar X = 12 * 10
+	-- Ejemplo de cómo debería verse tu ROM para que el dato pase al buffer
+	 
+	 0  => OP_WAIT  & x"00"     & x"00", -- Espera a que presiones el botón "Run"
+    1  => OP_LDX   & ADDR_LFSR & x"00", -- Captura el valor actual del LFSR
+    2  => OP_LDY   & x"25"     & x"00", -- Carga el divisor 37 
+    3  => OP_DIV   & x"00"     & x"00", -- Calcula reg_X mod reg_Y (Resultado 0-36 en reg_X)
+    4  => OP_DISP  & x"00"     & x"00", -- Pasa el dato al buffer
+    5  => OP_JUMP  & x"00"     & x"00", -- Salta de regreso al inicio (dirección 0) para otra jugada
     
-    0  => OP_LDX   & x"80" & x"00", -- Cargar X = 12 (desde dir x"80")
-    1  => OP_LDY   & x"81" & x"00", -- Cargar Y = 10 (desde dir x"81")
-    2  => OP_MUL   & x"00" & x"00", -- Multiplicar X = X * Y (12 * 10)
-                                   -- Resultado (120) se guarda en X
-                                   -- Banderas Z=0, S=0 se actualizan
-    3  => OP_DISP  & x"00" & x"00", -- Mostrar resultado (120)
-    4  => OP_STOP  & x"00" & x"00", -- Parar CPU
-
-    ------------------------------------------------------------------
-    -- Datos (16 bits)
-    ------------------------------------------------------------------
-    128 => x"00" & std_logic_vector(to_unsigned(12, 16)),   -- [x"80"] = 12
-    129 => x"00" & std_logic_vector(to_unsigned(10, 16)),   -- [x"81"] = 10
-   
     others => (others => '0')
   );
 begin
